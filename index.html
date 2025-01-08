@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>装備素材の個数を表で出力</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>GoogleドライブのOCRで取得したテキストを↓に入力</h2>
+  <textarea id="inputData" rows="10" cols="70" placeholder="データを入力してください"></textarea><br>
+  <button id="generateTable">表を生成</button>
+  <button id="hideLevelColumn">装備レベル列を非表示</button>
+  <button id="showLevelColumn">装備レベル列を表示</button>
+
+  <div id="tableContainer"></div>
+
+  <script>
+    function generateTable() {
+      const inputData = document.getElementById("inputData").value
+        .replace(/\n/g, "")
+        .replace(/X/g, "x")
+        .replace(/ /g, "")
+        .replace(/T/g, "\nT")
+        .replace(/^\n/, "");
+
+      const lines = inputData.split(/\n/);
+
+      // データを解析
+      const dataMap = {};
+      lines.forEach(line => {
+        const [level, count] = line.split("x");
+        if (!dataMap[level]) {
+          dataMap[level] = [];
+        }
+        dataMap[level].push(Number(count));
+      });
+
+      // テーブルデータを作成
+      const headers = ["装備レベル", "帽子", "グローブ", "シューズ", "バッグ", "バッジ", "ヘアピン", "お守り", "腕時計", "ネックレス"];
+      const data = Object.entries(dataMap).map(([level, counts]) => ({
+        level,
+        counts
+      }));
+
+      // テーブルを生成
+      const tableContainer = document.getElementById("tableContainer");
+      tableContainer.innerHTML = ""; // 既存の内容をクリア
+      const table = document.createElement("table");
+
+      // ヘッダーを生成
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      headers.forEach(header => {
+        const th = document.createElement("th");
+        th.textContent = header;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      // ボディを生成
+      const tbody = document.createElement("tbody");
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        const levelCell = document.createElement("td");
+        levelCell.textContent = row.level;
+        tr.appendChild(levelCell);
+
+        headers.slice(1).forEach((_, index) => {
+          const td = document.createElement("td");
+          td.textContent = row.counts[index] || 0; // データがない場合は0を表示
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      tableContainer.appendChild(table);
+    }
+
+    // 列を非表示にする関数
+    function hideLevelColumn() {
+      const table = document.querySelector("table");
+      if (table) {
+        const rows = table.rows;
+        for (let i = 0; i < rows.length; i++) {
+          rows[i].cells[0].classList.add("hidden");
+        }
+      }
+    }
+
+    // 列を再表示する関数
+    function showLevelColumn() {
+      const table = document.querySelector("table");
+      if (table) {
+        const rows = table.rows;
+        for (let i = 0; i < rows.length; i++) {
+          rows[i].cells[0].classList.remove("hidden");
+        }
+      }
+    }
+
+    document.getElementById("generateTable").addEventListener("click", generateTable);
+    document.getElementById("hideLevelColumn").addEventListener("click", hideLevelColumn);
+    document.getElementById("showLevelColumn").addEventListener("click", showLevelColumn);
+  </script>
+</body>
+</html>
