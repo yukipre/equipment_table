@@ -25,7 +25,7 @@
 </head>
 <body>
   <h2>使い方</h2>
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/TM2hMTu-EUQ?si=zl80AQlRfG_9MbDH" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/fuimd6ikPcM?si=JO1pJ7kFq1uEwLT4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
   <br><textarea id="inputData" rows="10" cols="70" placeholder="データを入力してください"></textarea><br>
   <button id="generateTable">表を生成</button>
   <button id="hideLevelColumn">装備レベル列を非表示</button>
@@ -35,67 +35,117 @@
 
   <script>
     function generateTable() {
-      const inputData = document.getElementById("inputData").value
-        .replace(/\n/g, "")
-        .replace(/X/g, "x")
-        .replace(/ /g, "")
-        .replace(/T/g, "\nT")
-        .replace(/^\n/, "");
+      end : {
 
-      const lines = inputData.split(/\n/);
+        const inputData = document.getElementById("inputData").value
+          .replace(/\n/g, "")
+          .replace(/X/g, "x")
+          .replace(/ /g, "")
+          .replace(/T/g, "\nT")
+          .replace(/^\n/, "");
 
-      // データを解析
-      const dataMap = {};
-      lines.forEach(line => {
-        const [level, count] = line.split("x");
-        if (!dataMap[level]) {
-          dataMap[level] = [];
+        // 配列にデータを格納
+        const lines = inputData.split(/\n/);
+
+        // 配列内に読み取りミスがないか確認
+        // T1装備のチェック
+        if(lines[8].split("x")[0] != "T1")
+        {
+          alert("T1装備の在庫がどれかゼロになっています。\n入力データを確認してください。");
+          break end;
         }
-        dataMap[level].push(Number(count));
-      });
 
-      // テーブルデータを作成
-      const headers = ["装備レベル", "帽子", "グローブ", "シューズ", "バッグ", "バッジ", "ヘアピン", "お守り", "腕時計", "ネックレス"];
-      const data = Object.entries(dataMap).map(([level, counts]) => ({
-        level,
-        counts
-      }));
+        // T2〜T9装備のチェック
+        const equipment_kinds = ["帽子", "グローブ", "シューズ", "バッグ", "バッジ", "ヘアピン", "お守り", "腕時計", "ネックレス"];
+        const equipment_levels = ["T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"];
 
-      // テーブルを生成
-      const tableContainer = document.getElementById("tableContainer");
-      tableContainer.innerHTML = ""; // 既存の内容をクリア
-      const table = document.createElement("table");
+        // 修正で増えた分のカウントを増やす変数
+        let countup = 0;
 
-      // ヘッダーを生成
-      const thead = document.createElement("thead");
-      const headerRow = document.createElement("tr");
-      headers.forEach(header => {
-        const th = document.createElement("th");
-        th.textContent = header;
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
+        // 装備種別
+        for(let i = 0; i < 9; i++) {
+          // T2〜T9
+          for(let j = 0; j < 8; j++) {
 
-      // ボディを生成
-      const tbody = document.createElement("tbody");
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-        const levelCell = document.createElement("td");
-        levelCell.textContent = row.level;
-        tr.appendChild(levelCell);
+            // 正しい要素が存在するかチェック
+            let check_element = lines[9+i*8+j].split("x")[0]
+            
+            if(check_element != equipment_levels[j]){
+              // 異常値の処理
+              var fix = window.confirm("データ修正のための確認です。\n" + equipment_kinds[i] + "の" + equipment_levels[j] + "装備の在庫はゼロですか？");
+              if(fix){
+                // 装備在庫ゼロの情報を追加
+                lines.splice(9+i*8+j, 0, equipment_levels[j] + "x0");
+              }
+              else{
+                // 判定中の1個前の要素を分割してTが1になってしまっているのを修正
+                let firstIndex = lines[9+i*8+j-1].indexOf('x');
+                let secondIndex = lines[9+i*8+j-1].indexOf('x', firstIndex + 1);
+                let part1 = lines[9+i*8+j-1].substring(0, secondIndex - 2);
+                let part2 = lines[9+i*8+j-1].substring(secondIndex - 2);
+                part2 = 'T' + part2.substring(1);
 
-        headers.slice(1).forEach((_, index) => {
-          const td = document.createElement("td");
-          td.textContent = row.counts[index] || 0; // データがない場合は0を表示
-          tr.appendChild(td);
+                lines.splice(9+i*8+j-1, 1, part1, part2);
+              }
+            }
+          }
+        }
+
+        //alert(lines);
+
+        // データを解析
+        const dataMap = {};
+        lines.forEach(line => {
+          const [level, count] = line.split("x");
+          if (!dataMap[level]) {
+            dataMap[level] = [];
+          }
+          dataMap[level].push(Number(count));
         });
 
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
+        // テーブルデータを作成
+        const headers = ["装備レベル", "帽子", "グローブ", "シューズ", "バッグ", "バッジ", "ヘアピン", "お守り", "腕時計", "ネックレス"];
+        const data = Object.entries(dataMap).map(([level, counts]) => ({
+          level,
+          counts
+        }));
 
-      tableContainer.appendChild(table);
+        // テーブルを生成
+        const tableContainer = document.getElementById("tableContainer");
+        tableContainer.innerHTML = ""; // 既存の内容をクリア
+        const table = document.createElement("table");
+
+        // ヘッダーを生成
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        headers.forEach(header => {
+          const th = document.createElement("th");
+          th.textContent = header;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // ボディを生成
+        const tbody = document.createElement("tbody");
+        data.forEach(row => {
+          const tr = document.createElement("tr");
+          const levelCell = document.createElement("td");
+          levelCell.textContent = row.level;
+          tr.appendChild(levelCell);
+
+          headers.slice(1).forEach((_, index) => {
+            const td = document.createElement("td");
+            td.textContent = row.counts[index] || 0; // データがない場合は0を表示
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+
+        tableContainer.appendChild(table);
+      }
     }
 
     // 列を非表示にする関数
