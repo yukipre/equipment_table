@@ -42,7 +42,11 @@
           .replace(/X/g, "x")
           .replace(/ /g, "")
           .replace(/T/g, "\nT")
-          .replace(/^\n/, "");
+          .replace(/^\n/, "")
+          .replace(/(/, "")
+          .replace(/)/, "")
+          .replace(/（/, "")
+          .replace(/）/, "");
 
         // 配列にデータを格納
         const lines = inputData.split(/\n/);
