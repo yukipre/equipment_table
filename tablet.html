@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>装備素材の個数を表で出力</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>タブレット・エミュレーターユーザー専用</h1>
+  <p>スクショの解像度の関係で、タブレット・エミュレーターユーザー専用となっています。</p>
+  <p>スマホからプレイしている方は<a href="index.html">Ver.1</a>の方を使ってください。</p>
+  <h2>使い方</h2>
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/cr2sdsaZdlE?si=p8LBG7CQij4vuFr3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>  <br>
+  <h3>入力欄</h3>
+  <textarea id="inputData" rows="10" cols="70" placeholder="データを入力してください"></textarea><br>
+  <button id="generateTable">表を生成</button>
+  <button id="hideLevelColumn">装備レベル列を非表示</button>
+  <button id="showLevelColumn">装備レベル列を表示</button>
+
+  <div id="tableContainer"></div>
+
+  <script>
+    function generateTable() {
+      end : {
+
+        const inputData = document.getElementById("inputData").value
+          .replace(/\n/g, "")
+          .replace(/X/g, "x")
+          .replace(/ /g, "")
+          .replace(/T/g, "\nT")
+          .replace(/^\n/, "")
+          .replace(/\(/g, '')
+          .replace(/\)/g, '')
+          .replace(/（/g, '')
+          .replace(/）/g, '');
+
+        // 配列にデータを格納
+        const lines = inputData.split(/\n/);
+
+        // 配列内に読み取りミスがないか確認
+        // T1装備のチェック
+        if(lines[8].split("x")[0] != "T1")
+        {
+          alert("T1装備の在庫がどれかゼロになっています。\n入力データを確認してください。");
+          break end;
+        }
+
+        // T2〜T9装備のチェック
+        const equipment_kinds = ["帽子", "グローブ", "シューズ", "バッグ", "バッジ", "ヘアピン", "お守り", "腕時計", "ネックレス"];
+        const equipment_levels = ["T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9"];
+
+        // 修正で増えた分のカウントを増やす変数
+        let countup = 0;
+
+        // 装備種別
+        for(let i = 0; i < 9; i++) {
+          // T2〜T9
+          for(let j = 0; j < 8; j++) {
+
+            // 正しい要素が存在するかチェック
+            let check_element = lines[9+i*8+j].split("x")[0]
+            
+            if(check_element != equipment_levels[j]){
+              // 異常値の処理
+              var fix = window.confirm("データ修正のための確認です。\n" + equipment_kinds[i] + "の" + equipment_levels[j] + "装備の在庫はゼロですか？");
+              if(fix){
+                // 装備在庫ゼロの情報を追加
+                lines.splice(9+i*8+j, 0, equipment_levels[j] + "x0");
+              }
+              else{
+                // 判定中の1個前の要素を分割してTが1になってしまっているのを修正
+                let firstIndex = lines[9+i*8+j-1].indexOf('x');
+                let secondIndex = lines[9+i*8+j-1].indexOf('x', firstIndex + 1);
+                let part1 = lines[9+i*8+j-1].substring(0, secondIndex - 2);
+                let part2 = lines[9+i*8+j-1].substring(secondIndex - 2);
+                part2 = 'T' + part2.substring(1);
+
+                lines.splice(9+i*8+j-1, 1, part1, part2);
+              }
+            }
+          }
+        }
+
+        //alert(lines);
+
+        // データを解析
+        const dataMap = {};
+        lines.forEach(line => {
+          const [level, count] = line.split("x");
+          if (!dataMap[level]) {
+            dataMap[level] = [];
+          }
+          dataMap[level].push(Number(count));
+        });
+
+        // テーブルデータを作成
+        const headers = ["装備レベル", "帽子", "グローブ", "シューズ", "バッグ", "バッジ", "ヘアピン", "お守り", "腕時計", "ネックレス"];
+        const data = Object.entries(dataMap).map(([level, counts]) => ({
+          level,
+          counts
+        }));
+
+        // テーブルを生成
+        const tableContainer = document.getElementById("tableContainer");
+        tableContainer.innerHTML = ""; // 既存の内容をクリア
+        const table = document.createElement("table");
+
+        // ヘッダーを生成
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        headers.forEach(header => {
+          const th = document.createElement("th");
+          th.textContent = header;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // ボディを生成
+        const tbody = document.createElement("tbody");
+        data.forEach(row => {
+          const tr = document.createElement("tr");
+          const levelCell = document.createElement("td");
+          levelCell.textContent = row.level;
+          tr.appendChild(levelCell);
+
+          headers.slice(1).forEach((_, index) => {
+            const td = document.createElement("td");
+            td.textContent = row.counts[index] || 0; // データがない場合は0を表示
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+
+        tableContainer.appendChild(table);
+      }
+    }
+
+    // 列を非表示にする関数
+    function hideLevelColumn() {
+      const table = document.querySelector("table");
+      if (table) {
+        const rows = table.rows;
+        for (let i = 0; i < rows.length; i++) {
+          rows[i].cells[0].classList.add("hidden");
+        }
+      }
+    }
+
+    // 列を再表示する関数
+    function showLevelColumn() {
+      const table = document.querySelector("table");
+      if (table) {
+        const rows = table.rows;
+        for (let i = 0; i < rows.length; i++) {
+          rows[i].cells[0].classList.remove("hidden");
+        }
+      }
+    }
+
+    document.getElementById("generateTable").addEventListener("click", generateTable);
+    document.getElementById("hideLevelColumn").addEventListener("click", hideLevelColumn);
+    document.getElementById("showLevelColumn").addEventListener("click", showLevelColumn);
+  </script>
+</body>
+</html>
